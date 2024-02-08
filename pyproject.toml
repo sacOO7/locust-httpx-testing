@@ -1,0 +1,15 @@
+[tool.poetry]
+name = "httpx-load-testing"
+version = "0.1.0"
+description = ""
+authors = ["sacOO7 <sachinshinde7676@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+locust = "^2.22.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
