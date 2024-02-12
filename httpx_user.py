@@ -1,3 +1,7 @@
+# for HTTP/2 support in locust
+# https://github.com/locustio/locust/issues/264
+# https://gist.github.com/gawel/f48e577425f872e1a81028f3f53353cf#file-clientx-py
+# has modifications to support breaking changes from locust 2.15.0
 import re
 import time
 
@@ -23,12 +27,11 @@ class LocustResponse(Response):
 
 
 class HttpSession(httpx.Client):
-    def __init__(self, base_url, request_success, request_failure, *args, **k):
+    def __init__(self, base_url, request_trigger, *args, **k):
         super().__init__(*args, **k)
 
         self.base_url = base_url
-        self.request_success = request_success
-        self.request_failure = request_failure
+        self.request_trigger = request_trigger
 
         # Check for basic authentication
         parsed_url = urlparse(str(self.base_url))
@@ -68,7 +71,7 @@ class HttpSession(httpx.Client):
 
         # record the consumed time
         request_meta["response_time"] = (
-            time.monotonic() - request_meta["start_time"]) * 1000
+                                                time.monotonic() - request_meta["start_time"]) * 1000
 
         request_meta["name"] = str(name or response.request.url)
 
@@ -84,8 +87,8 @@ class HttpSession(httpx.Client):
         if catch_response:
             response.locust_request_meta = request_meta
             return ResponseContextManager(
-                response, request_success=self.request_success,
-                request_failure=self.request_failure
+                response,
+                request_trigger=self.request_trigger,
             )
         else:
             if name:
@@ -98,7 +101,7 @@ class HttpSession(httpx.Client):
             try:
                 response.raise_for_status()
             except httpx.HTTPError as e:
-                self.request_failure.fire(
+                self.request_trigger.fire(
                     request_type=request_meta["method"],
                     name=request_meta["name"],
                     response_time=request_meta["response_time"],
@@ -106,7 +109,7 @@ class HttpSession(httpx.Client):
                     exception=e,
                 )
             else:
-                self.request_success.fire(
+                self.request_trigger.fire(
                     request_type=request_meta["method"],
                     name=request_meta["name"],
                     response_time=request_meta["response_time"],
@@ -128,10 +131,10 @@ class HttpSession(httpx.Client):
         except (InvalidURL,):
             raise
         except RequestError as e:
-            r = LocustResponse()
+            # with status_code=0, content returns None
+            r = LocustResponse(status_code=0)
             r.error = e
-            r.status_code = 0  # with this status_code, content returns None
-            r.request = Request(method, url).prepare()
+            r.request = Request(method, url)
             return r
 
 
@@ -149,12 +152,12 @@ class ResponseContextManager(LocustResponse):
     """
 
     _manual_result = None
+    locust_request_meta: dict
 
-    def __init__(self, response, request_success, request_failure):
+    def __init__(self, response, request_trigger):
         # copy data from response to this object
         self.__dict__ = response.__dict__
-        self._request_success = request_success
-        self._request_failure = request_failure
+        self._request_trigger = request_trigger
 
     def __enter__(self):
         return self
@@ -188,7 +191,7 @@ class ResponseContextManager(LocustResponse):
         return True
 
     def _report_success(self):
-        self._request_success.fire(
+        self._request_trigger.fire(
             request_type=self.locust_request_meta["method"],
             name=self.locust_request_meta["name"],
             response_time=self.locust_request_meta["response_time"],
@@ -196,7 +199,7 @@ class ResponseContextManager(LocustResponse):
         )
 
     def _report_failure(self, exc):
-        self._request_failure.fire(
+        self._request_trigger.fire(
             request_type=self.locust_request_meta["method"],
             name=self.locust_request_meta["name"],
             response_time=self.locust_request_meta["response_time"],
@@ -214,7 +217,6 @@ class ResponseContextManager(LocustResponse):
 
 
 class HttpxUser(User):
-
     abstract = True
     http2 = True
 
@@ -229,6 +231,5 @@ class HttpxUser(User):
         self.client = HttpSession(
             base_url=self.host,
             http2=self.http2,
-            request_success=self.environment.events.request_success,
-            request_failure=self.environment.events.request_failure,
+            request_trigger=self.environment.events.request,
         )
