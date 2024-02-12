@@ -1,7 +1,3 @@
-# for HTTP/2 support in locust
-# https://github.com/locustio/locust/issues/264
-# https://gist.github.com/gawel/f48e577425f872e1a81028f3f53353cf#file-clientx-py
-# has modifications to support breaking changes from locust 2.15.0
 import re
 import time
 
