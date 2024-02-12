@@ -8,6 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.11"
 locust = "^2.22.0"
+httpx = {extras = ["http2"], version = "^0.26.0"}
 
 
 [build-system]
