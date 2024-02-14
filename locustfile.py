@@ -1,10 +1,18 @@
 from locust import task
 
 from httpx_user import HttpxUser
-from request_user import RequestUser
+from request_user import RequestsUser
 
 
-class TestUser(HttpxUser):
+class RequestsTestUser(RequestsUser):
     @task
     def fetch_ably_time(self):
         self.client.get("/time")
+
+
+# class HttpxTestUser(HttpxUser):
+#     @task
+#     def fetch_ably_time(self):
+#         self.client.get("/time")
+#
+
