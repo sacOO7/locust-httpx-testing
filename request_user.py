@@ -200,7 +200,7 @@ class HttpSession(SingletonRequestsClient):
             return r
 
 
-class RequestUser(User):
+class RequestsUser(User):
     """
     Represents an HTTP "user" which is to be spawned and attack the system that is to be load tested.
 
