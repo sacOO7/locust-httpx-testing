@@ -22,7 +22,23 @@ class LocustResponse(Response):
         Response.raise_for_status(self)
 
 
-class HttpSession(httpx.Client):
+class SingletonHttpxClient(httpx.Client):
+    globalClient = None
+    initialized = False
+
+    def __new__(cls, *args, **k):
+        if cls.globalClient is None:
+            cls.globalClient = super().__new__(cls)
+        return cls.globalClient
+
+    def __init__(self, *args, **k):
+        if not self.__class__.initialized:
+            super().__init__(*args, **k)
+            self.__class__.initialized = True
+
+
+class HttpSession(SingletonHttpxClient):
+
     def __init__(self, base_url, request_trigger, *args, **k):
         super().__init__(*args, **k)
 
@@ -215,6 +231,7 @@ class ResponseContextManager(LocustResponse):
 class HttpxUser(User):
     abstract = True
     http2 = True
+    # limits = httpx.Limits(max_keepalive_connections=100, max_connections=100, keepalive_expiry=120)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -228,4 +245,5 @@ class HttpxUser(User):
             base_url=self.host,
             http2=self.http2,
             request_trigger=self.environment.events.request,
+            # limits=self.limits
         )
