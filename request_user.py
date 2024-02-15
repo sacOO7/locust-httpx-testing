@@ -10,6 +10,7 @@ from urllib.request import Request
 import requests
 from locust import User
 from locust.clients import LocustHttpAdapter, absolute_http_url_regexp, ResponseContextManager, LocustResponse
+from requests.adapters import DEFAULT_POOLSIZE
 from requests.auth import HTTPBasicAuth
 from requests.exceptions import MissingSchema, InvalidSchema, InvalidURL, RequestException
 from urllib3 import PoolManager
@@ -37,8 +38,6 @@ class SingletonRequestsClient(requests.Session):
 
 
 class HttpSession(SingletonRequestsClient):
-    pool_connections = 10
-    pool_maxsize = 10
 
     """
     Class for performing web requests and holding (session-) cookies between requests (in order
@@ -90,8 +89,8 @@ class HttpSession(SingletonRequestsClient):
 
         locustHttpAdapter = LocustHttpAdapter(
             pool_manager=pool_manager,
-            pool_connections=self.pool_connections,
-            pool_maxsize=self.pool_maxsize,
+            pool_connections=kwargs['pool_connections'],
+            pool_maxsize=kwargs['pool_maxsize'],
         )
         self.mount("https://", locustHttpAdapter)
         self.mount("http://", locustHttpAdapter)
@@ -209,6 +208,9 @@ class HttpSession(SingletonRequestsClient):
 
 
 class RequestsUser(User):
+    pool_connections = DEFAULT_POOLSIZE
+    pool_maxsize = DEFAULT_POOLSIZE
+
     """
     Represents an HTTP "user" which is to be spawned and attack the system that is to be load tested.
 
@@ -238,10 +240,10 @@ class RequestsUser(User):
             request_event=self.environment.events.request,
             user=self,
             pool_manager=self.pool_manager,
+            pool_connections= self.pool_connections,
+            pool_maxsize=self.pool_maxsize
         )
 
-        # self.client.pool_connections = 100
-        # self.client.pool_maxsize = 100
         """
         Instance of HttpSession that is created upon instantiation of Locust.
         The client supports cookies, and therefore keeps the session between HTTP requests.

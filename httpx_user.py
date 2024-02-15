@@ -1,6 +1,7 @@
 import re
 import time
 
+from httpx._config import DEFAULT_LIMITS
 from locust import User
 from locust.exception import LocustError
 import httpx
@@ -229,9 +230,10 @@ class ResponseContextManager(LocustResponse):
 
 
 class HttpxUser(User):
+    limits = DEFAULT_LIMITS
+
     abstract = True
     http2 = True
-    # limits = httpx.Limits(max_keepalive_connections=100, max_connections=100, keepalive_expiry=120)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -245,5 +247,5 @@ class HttpxUser(User):
             base_url=self.host,
             http2=self.http2,
             request_trigger=self.environment.events.request,
-            # limits=self.limits
+            limits=self.limits
         )
