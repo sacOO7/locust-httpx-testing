@@ -37,6 +37,9 @@ class SingletonRequestsClient(requests.Session):
 
 
 class HttpSession(SingletonRequestsClient):
+    pool_connections = 10
+    pool_maxsize = 10
+
     """
     Class for performing web requests and holding (session-) cookies between requests (in order
     to be able to log in and out of websites). Each request is logged so that locust can display
@@ -85,8 +88,13 @@ class HttpSession(SingletonRequestsClient):
             # configure requests to use basic auth
             self.auth = HTTPBasicAuth(parsed_url.username, parsed_url.password)
 
-        self.mount("https://", LocustHttpAdapter(pool_manager=pool_manager))
-        self.mount("http://", LocustHttpAdapter(pool_manager=pool_manager))
+        locustHttpAdapter = LocustHttpAdapter(
+            pool_manager=pool_manager,
+            pool_connections=self.pool_connections,
+            pool_maxsize=self.pool_maxsize,
+        )
+        self.mount("https://", locustHttpAdapter)
+        self.mount("http://", locustHttpAdapter)
 
     def _build_url(self, path):
         """prepend url with hostname unless it's already an absolute URL"""
@@ -231,6 +239,9 @@ class RequestsUser(User):
             user=self,
             pool_manager=self.pool_manager,
         )
+
+        # self.client.pool_connections = 100
+        # self.client.pool_maxsize = 100
         """
         Instance of HttpSession that is created upon instantiation of Locust.
         The client supports cookies, and therefore keeps the session between HTTP requests.
