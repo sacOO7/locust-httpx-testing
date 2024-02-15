@@ -1,4 +1,4 @@
-from locust import task
+from locust import task, HttpUser
 
 from httpx_user import HttpxUser
 from request_user import RequestsUser
