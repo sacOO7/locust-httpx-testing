@@ -62,7 +62,9 @@ class HttpSession(SingletonRequestsClient):
                            and then mark it as successful even if the response code was not (i.e 500 or 404).
     """
 
-    def __init__(self, base_url, request_event, user, *args, pool_manager: PoolManager | None = None, **kwargs):
+    def __init__(self, base_url, request_event, user, *args,
+                 pool_manager: PoolManager | None = None,
+                 pool_connections, pool_maxsize, **kwargs):
         super().__init__(*args, **kwargs)
 
         self.base_url = base_url
@@ -89,8 +91,8 @@ class HttpSession(SingletonRequestsClient):
 
         locustHttpAdapter = LocustHttpAdapter(
             pool_manager=pool_manager,
-            pool_connections=kwargs['pool_connections'],
-            pool_maxsize=kwargs['pool_maxsize'],
+            pool_connections=pool_connections,
+            pool_maxsize=pool_maxsize,
         )
         self.mount("https://", locustHttpAdapter)
         self.mount("http://", locustHttpAdapter)
@@ -240,7 +242,7 @@ class RequestsUser(User):
             request_event=self.environment.events.request,
             user=self,
             pool_manager=self.pool_manager,
-            pool_connections= self.pool_connections,
+            pool_connections=self.pool_connections,
             pool_maxsize=self.pool_maxsize
         )
 
