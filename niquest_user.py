@@ -145,14 +145,14 @@ class ResponseContextManager(LocustResponse):
 class LocustHttpAdapter(HTTPAdapter):
     def __init__(self, pool_manager: PoolManager | None, *args, **kwargs):
         self.poolmanager = pool_manager
-        super().__init__(*args, **kwargs)
+        super().__init__(*args, pool_connections=100, pool_maxsize=100, **kwargs)
 
     def init_poolmanager(self, *args, **kwargs):
         if self.poolmanager is None:
             super().init_poolmanager(*args, **kwargs)
 
 
-class SingletonRequestsClient(niquests.Session):
+class SingletonNiquestsClient(niquests.Session):
     globalClient = None
     initialized = False
 
@@ -167,7 +167,7 @@ class SingletonRequestsClient(niquests.Session):
             self.__class__.initialized = True
 
 
-class HttpSession(SingletonRequestsClient):
+class HttpSession(SingletonNiquestsClient):
     """
     Class for performing web requests and holding (session-) cookies between requests (in order
     to be able to log in and out of websites). Each request is logged so that locust can display
@@ -363,9 +363,7 @@ class NiquestsUser(User):
             request_event=self.environment.events.request,
             user=self,
             pool_manager=self.pool_manager,
-            multiplexed=False,
-            pool_connections=50,
-            pool_maxsize=50,
+            multiplexed=False
         )
         """
         Instance of HttpSession that is created upon instantiation of Locust.
